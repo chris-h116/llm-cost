@@ -47,7 +47,7 @@ class UsageRecord(object):
         if name == "model":
             return self.model
         if name == "date":
-            return self.date
+            return _calendar_day(self.date)
         value = self.raw.get(name)
         return "(unknown)" if value is None else value
 
@@ -57,6 +57,22 @@ class UsageRecord(object):
             self.input_tokens,
             self.output_tokens,
         )
+
+
+def _calendar_day(date):
+    """Truncate an ISO-8601 date or timestamp to its ``YYYY-MM-DD`` day.
+
+    ``--group-by date`` should bucket by calendar day even when the log
+    carries full timestamps (as both providers' SDKs do): otherwise every
+    call gets its own group and the report is useless for "what did
+    yesterday cost". Anything that does not look like ``YYYY-MM-DD...`` is
+    passed through unchanged rather than mangled.
+    """
+    if not date:
+        return "(unknown)"
+    if len(date) >= 10 and date[4] == "-" and date[7] == "-":
+        return date[:10]
+    return date
 
 
 def _nonneg_int(value, field):

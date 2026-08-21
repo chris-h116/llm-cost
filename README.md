@@ -77,7 +77,9 @@ TOTAL                 5  262,600  128,000  16,820  $0.5600
 skipped 1 record(s) with no price: internal-router-v3
 ```
 
-`--group-by` takes `model`, `date`, or any other top-level field in your log:
+`--group-by` takes `model`, `date`, or any other top-level field in your log.
+`date` buckets by calendar day even when the log carries full timestamps, as
+in the example above (`2026-06-01T09:12:00Z` groups under `2026-06-01`):
 
 ```console
 $ llm-cost report usage.jsonl --group-by team

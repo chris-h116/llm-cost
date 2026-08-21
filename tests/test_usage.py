@@ -135,6 +135,54 @@ class UsageRecordField(unittest.TestCase):
         )
         self.assertEqual(record.field("team"), "(unknown)")
 
+    def test_field_date_buckets_a_timestamp_by_calendar_day(self):
+        record = UsageRecord(
+            model="claude-opus-5",
+            date="2026-06-01T09:12:00Z",
+            input_tokens=1,
+            output_tokens=1,
+            cached_input_tokens=0,
+            cache_write_tokens=0,
+            raw={"model": "claude-opus-5"},
+        )
+        self.assertEqual(record.field("date"), "2026-06-01")
+
+    def test_field_date_passes_through_a_bare_day(self):
+        record = UsageRecord(
+            model="claude-opus-5",
+            date="2026-06-01",
+            input_tokens=1,
+            output_tokens=1,
+            cached_input_tokens=0,
+            cache_write_tokens=0,
+            raw={"model": "claude-opus-5"},
+        )
+        self.assertEqual(record.field("date"), "2026-06-01")
+
+    def test_field_date_falls_back_to_unknown_marker_when_blank(self):
+        record = UsageRecord(
+            model="claude-opus-5",
+            date="",
+            input_tokens=1,
+            output_tokens=1,
+            cached_input_tokens=0,
+            cache_write_tokens=0,
+            raw={"model": "claude-opus-5"},
+        )
+        self.assertEqual(record.field("date"), "(unknown)")
+
+    def test_field_date_passes_through_unrecognised_shapes(self):
+        record = UsageRecord(
+            model="claude-opus-5",
+            date="not-a-date",
+            input_tokens=1,
+            output_tokens=1,
+            cached_input_tokens=0,
+            cache_write_tokens=0,
+            raw={"model": "claude-opus-5"},
+        )
+        self.assertEqual(record.field("date"), "not-a-date")
+
 
 class LoadUsage(unittest.TestCase):
     def test_blank_lines_are_skipped(self):

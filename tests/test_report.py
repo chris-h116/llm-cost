@@ -20,10 +20,12 @@ def _table():
     )
 
 
-def _record(model, input_tokens, output_tokens, cached_input_tokens=0, cache_write_tokens=0, raw=None):
+def _record(
+    model, input_tokens, output_tokens, cached_input_tokens=0, cache_write_tokens=0, raw=None, date="2026-01-01"
+):
     return UsageRecord(
         model=model,
-        date="2026-01-01",
+        date=date,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         cached_input_tokens=cached_input_tokens,
@@ -73,6 +75,20 @@ class BuildReport(unittest.TestCase):
         self.assertEqual(len(report.groups), 1)
         self.assertEqual(report.groups[0].key, "agents")
         self.assertEqual(report.groups[0].calls, 2)
+
+    def test_group_by_date_buckets_timestamps_by_calendar_day(self):
+        records = [
+            _record("model-a", 1000000, 0, date="2026-06-01T09:12:00Z"),
+            _record("model-a", 1000000, 0, date="2026-06-01T22:45:00Z"),
+            _record("model-a", 1000000, 0, date="2026-06-02T00:01:00Z"),
+        ]
+        report = build_report(records, _table(), group_by="date")
+        self.assertEqual(
+            sorted(group.key for group in report.groups), ["2026-06-01", "2026-06-02"]
+        )
+        by_day = dict((group.key, group.calls) for group in report.groups)
+        self.assertEqual(by_day["2026-06-01"], 2)
+        self.assertEqual(by_day["2026-06-02"], 1)
 
     def test_cost_per_call_is_zero_for_empty_group(self):
         report = build_report([], _table(), group_by="model")

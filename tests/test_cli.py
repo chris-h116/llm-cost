@@ -5,6 +5,7 @@ import os
 import tempfile
 import unittest
 
+from llm_cost import __version__
 from llm_cost.cli import main
 from llm_cost.pricing import BUILTIN_PRICING, PRICING_AS_OF
 
@@ -15,6 +16,16 @@ def _run(argv):
     with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
         code = main(argv)
     return code, stdout.getvalue(), stderr.getvalue()
+
+
+class VersionFlag(unittest.TestCase):
+    def test_version_prints_and_exits_zero(self):
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            with self.assertRaises(SystemExit) as raised:
+                main(["--version"])
+        self.assertEqual(raised.exception.code, 0)
+        self.assertIn(__version__, stdout.getvalue())
 
 
 class EstimateCommand(unittest.TestCase):

@@ -123,7 +123,8 @@ $ llm-cost models
 ```
 
 Every subcommand accepts `--json` for machine-readable output and `--pricing`
-for an override file, before or after the subcommand.
+for an override file, before or after the subcommand. `llm-cost --version`
+prints the installed package version.
 
 ## Prices are a snapshot, not a source of truth
 

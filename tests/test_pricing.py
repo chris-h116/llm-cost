@@ -66,6 +66,14 @@ class Resolve(unittest.TestCase):
         self.assertNotIn("not-a-real-model", self.table)
         self.assertIn("claude-opus-5", self.table)
 
+    def test_mixed_case_override_name_resolves_case_insensitively(self):
+        # An override file's keys are whatever casing the author typed; the
+        # documented case-insensitive match must hold for those too, not
+        # just for the all-lowercase built-in table.
+        table = parse_pricing({"My-Internal-Model": {"input": 1, "output": 2}})
+        self.assertIs(table.resolve("my-internal-model"), table.resolve("My-Internal-Model"))
+        self.assertIs(table.resolve("MY-INTERNAL-MODEL"), table.resolve("my-internal-model"))
+
 
 class ParsePricing(unittest.TestCase):
     def test_flat_shape_merges_onto_builtin_table(self):

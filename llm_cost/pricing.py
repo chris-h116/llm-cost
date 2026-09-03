@@ -122,7 +122,9 @@ class PricingTable(object):
     __slots__ = ("prices", "as_of", "source")
 
     def __init__(self, prices, as_of=PRICING_AS_OF, source="built-in"):
-        self.prices = dict(prices)
+        # Keyed lowercase so resolve()'s case-insensitive lookups work
+        # regardless of how an override file capitalised its model names.
+        self.prices = dict((name.lower(), price) for name, price in prices.items())
         self.as_of = as_of
         self.source = source
 

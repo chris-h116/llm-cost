@@ -171,5 +171,60 @@ class PricingOverride(unittest.TestCase):
             os.remove(handle.name)
 
 
+class GlobalFlagsWorkOnEitherSideOfTheSubcommand(unittest.TestCase):
+    """The README promises --json and --pricing work "before or after the
+    subcommand"; every other test in this file only exercises them before."""
+
+    def test_json_flag_after_subcommand(self):
+        code, out, _ = _run(
+            ["estimate", "--model", "claude-opus-5", "--input", "1000", "--output", "500", "--json"]
+        )
+        self.assertEqual(code, 0)
+        payload = json.loads(out)
+        self.assertAlmostEqual(payload["total_cost"], 0.0175)
+
+    def test_pricing_flag_after_subcommand(self):
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        )
+        handle.write(json.dumps({"models": {"my-model": {"input": 1, "output": 3}}}))
+        handle.close()
+        try:
+            code, out, _ = _run(
+                [
+                    "estimate",
+                    "--model",
+                    "my-model",
+                    "--input",
+                    "1000000",
+                    "--output",
+                    "0",
+                    "--pricing",
+                    handle.name,
+                    "--json",
+                ]
+            )
+            self.assertEqual(code, 0)
+            payload = json.loads(out)
+            self.assertAlmostEqual(payload["total_cost"], 1.0)
+        finally:
+            os.remove(handle.name)
+
+    def test_json_flag_before_and_after_the_report_subcommand_agree(self):
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".jsonl", delete=False, encoding="utf-8"
+        )
+        handle.write('{"model":"claude-opus-5","usage":{"input_tokens":1000,"output_tokens":100}}\n')
+        handle.close()
+        try:
+            code_before, out_before, _ = _run(["--json", "report", handle.name])
+            code_after, out_after, _ = _run(["report", handle.name, "--json"])
+            self.assertEqual(code_before, 0)
+            self.assertEqual(code_after, 0)
+            self.assertEqual(json.loads(out_before), json.loads(out_after))
+        finally:
+            os.remove(handle.name)
+
+
 if __name__ == "__main__":
     unittest.main()

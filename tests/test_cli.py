@@ -132,6 +132,21 @@ class CompareCommand(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("no models matched", err)
 
+    def test_pricing_override_is_applied(self):
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        )
+        handle.write(json.dumps({"models": {"my-model": {"input": 1, "output": 3}}, "replace": True}))
+        handle.close()
+        try:
+            code, out, _ = _run(
+                ["--pricing", handle.name, "compare", "--input", "1000000", "--output", "0"]
+            )
+            self.assertEqual(code, 0)
+            self.assertIn("my-model", out)
+        finally:
+            os.remove(handle.name)
+
 
 class ModelsCommand(unittest.TestCase):
     def test_text_output_lists_every_model(self):
@@ -146,6 +161,21 @@ class ModelsCommand(unittest.TestCase):
         self.assertEqual(payload["as_of"], PRICING_AS_OF)
         self.assertEqual(payload["source"], "built-in")
         self.assertEqual(len(payload["models"]), len(BUILTIN_PRICING))
+
+    def test_pricing_override_is_applied(self):
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        )
+        handle.write(json.dumps({"models": {"my-model": {"input": 1, "output": 3}}, "replace": True}))
+        handle.close()
+        try:
+            code, out, _ = _run(["models", "--pricing", handle.name, "--json"])
+            self.assertEqual(code, 0)
+            payload = json.loads(out)
+            self.assertEqual(payload["source"], handle.name)
+            self.assertEqual(list(payload["models"]), ["my-model"])
+        finally:
+            os.remove(handle.name)
 
 
 class PricingOverride(unittest.TestCase):
@@ -207,6 +237,27 @@ class GlobalFlagsWorkOnEitherSideOfTheSubcommand(unittest.TestCase):
             self.assertEqual(code, 0)
             payload = json.loads(out)
             self.assertAlmostEqual(payload["total_cost"], 1.0)
+        finally:
+            os.remove(handle.name)
+
+    def test_json_flag_after_subcommand_for_compare(self):
+        code, out, _ = _run(
+            ["compare", "--input", "1000", "--output", "500", "--provider", "anthropic", "--json"]
+        )
+        self.assertEqual(code, 0)
+        payload = json.loads(out)
+        self.assertTrue(payload)
+
+    def test_pricing_flag_after_subcommand_for_models(self):
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        )
+        handle.write(json.dumps({"models": {"my-model": {"input": 1, "output": 3}}, "replace": True}))
+        handle.close()
+        try:
+            code, out, _ = _run(["models", "--pricing", handle.name])
+            self.assertEqual(code, 0)
+            self.assertIn("my-model", out)
         finally:
             os.remove(handle.name)
 
